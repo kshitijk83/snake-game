@@ -28,16 +28,23 @@ fn start(){
         }
     });
     let _ = utils::document().add_event_listener_with_callback("keydown", closure.as_ref().unchecked_ref());
+    closure.forget();
 
     fn game_loop(snake: Rc<RefCell<Snake>>, canvas: Rc<Canvas>, time: u32){
-        let cl = Closure::<dyn FnMut(_)>::new(move |_: i32|{
-            game_loop(snake.clone(), canvas.clone(), time);
-            snake.borrow_mut().update();
-            snake.borrow().draw(&canvas);
+        let snake_clone = snake.clone();
+        let canvas_clone = canvas.clone();
+        let cl = Closure::<dyn Fn()>::new(move ||{
+            snake_clone.borrow_mut().update();
+            snake_clone.borrow().draw(&canvas_clone);
+            game_loop(snake_clone.clone(), canvas_clone.clone(), time);
         });
         
-        let _ = utils::window().set_timeout_with_callback_and_timeout_and_arguments_0(cl.as_ref().unchecked_ref(), 100);
+        let _ = utils::window().set_timeout_with_callback_and_timeout_and_arguments_0(cl.as_ref().clone().as_ref().unchecked_ref(), 100);
+
+        cl.forget();
     }
 
     game_loop(snake, Rc::new(canvas), 100);
+
+   
 }
